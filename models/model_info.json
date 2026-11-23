@@ -1,0 +1,5 @@
+{
+    "model": "mobilenetv2_bisindo.keras",
+    "input_size": 224,
+    "input": "gambar RGB dengan nilai piksel 0 sampai 255, preprocess_input sudah ada di dalam model"
+}

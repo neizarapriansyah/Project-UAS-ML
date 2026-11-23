@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ISYARA AI – Deteksi Bahasa Isyarat Indonesia Real-Time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0c22;--bg2:#080718;--panel:#16133a;--line:#2d2966;--acc:#ff9b54;--text:#ece9ff;--muted:#aaa6d0;--bad:#ff8a80;
+--f:"Inter","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--text);font:400 1rem/1.65 var(--f)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{line-height:1.15;letter-spacing:-.01em}
+h2{font-size:clamp(1.7rem,3.5vw,2.3rem);font-weight:800;color:var(--acc);text-align:center;margin-bottom:40px}
+h3{font-size:1.25rem;font-weight:700;color:var(--acc)}
+.w{max-width:1100px;margin:0 auto;padding:0 24px}
+section{padding:84px 0}
+header{position:fixed;inset:0 0 auto;z-index:20;background:rgba(8,7,24,.88);backdrop-filter:blur(8px);border-bottom:1px solid #1d1a45}
+#prog{position:absolute;left:0;top:0;height:3px;width:0;background:var(--acc)}
+nav{display:flex;justify-content:space-between;align-items:center;height:64px}
+.logo{font-weight:800;font-size:1.4rem;color:var(--acc);text-decoration:none}
+nav ul{display:flex;gap:6px;list-style:none;margin:0;padding:0}
+nav ul a{color:var(--text);text-decoration:none;font-weight:500;padding:8px 12px;border-radius:8px}
+nav ul a:hover{color:var(--acc)}
+#burger{display:none;background:none;border:1.5px solid var(--line);color:var(--text);border-radius:8px;padding:6px 10px;font:600 1rem var(--f);cursor:pointer}
+@media(max-width:760px){
+ #burger{display:block}
+ nav ul{display:none;position:absolute;inset:64px 0 auto;flex-direction:column;background:var(--bg2);padding:10px 24px 16px;border-bottom:1px solid var(--line)}
+ nav ul.open{display:flex}}
+.hero{padding:170px 0 110px;text-align:center;background:radial-gradient(900px 400px at 50% 0,#2a2268 0,transparent 70%),linear-gradient(180deg,var(--bg2),#17123d 70%,var(--bg))}
+.hero h1{font-size:clamp(2.2rem,6vw,4rem);font-weight:800;color:var(--acc)}
+.hero p{font-size:clamp(1rem,2vw,1.3rem);margin:18px auto 34px;max-width:46em}
+.cta{display:inline-block;background:var(--acc);color:#1f1000;font-weight:700;font-size:1.1rem;padding:16px 38px;border-radius:999px;text-decoration:none;transition:transform .15s,box-shadow .15s}
+.cta:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,155,84,.3)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:32px 26px;text-align:center}
+.card svg{width:72px;height:72px;margin-bottom:14px}
+.card p{color:var(--muted);margin-top:10px}
+.about{display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:center}
+.about h2{text-align:left;margin-bottom:18px}
+.about p{font-size:1.15rem;color:#d4d0f2}
+.about svg{width:100%;max-width:340px;justify-self:center}
+@media(max-width:760px){.about{grid-template-columns:1fr}}
+.live{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px}
+@media(max-width:860px){.live{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px}
+.stage{position:relative;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden}
+.stage video,.stage img{width:100%;height:100%;object-fit:cover;display:block}
+.stage video{transform:scaleX(-1)}
+.roi{position:absolute;inset:0;margin:auto;height:84%;aspect-ratio:1;border:3px dashed var(--acc);border-radius:14px;pointer-events:none;opacity:.85}
+.roi.hit{border-style:solid;opacity:1}
+.empty{position:absolute;inset:0;display:grid;place-content:center;gap:6px;text-align:center;color:var(--muted);padding:20px}
+.empty b{color:var(--text)}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.btn{font:600 .95rem var(--f);padding:11px 20px;border-radius:999px;border:1.5px solid var(--acc);background:transparent;color:var(--acc);cursor:pointer}
+.btn.fill{background:var(--acc);color:#1f1000}
+.btn:hover{filter:brightness(1.12)}
+.hint{font-size:.9rem;color:var(--muted);margin-top:12px}
+.hint.err{color:var(--bad);font-weight:600}
+.banner{margin-bottom:18px;padding:10px 14px;border-left:4px solid var(--acc);background:var(--panel);font-size:.92rem;border-radius:0 8px 8px 0}
+.result{display:grid;justify-items:center;text-align:center;align-content:center}
+.ring{position:relative;width:min(100%,250px);aspect-ratio:1}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:8}
+.ring .tr{stroke:var(--line)}
+.ring .bar{stroke:var(--acc);stroke-linecap:round;transition:stroke-dashoffset .15s}
+.letter{position:absolute;inset:0;display:grid;place-content:center;font:800 8.5rem/1 var(--f);color:var(--acc)}
+.letter.none{color:var(--line)}
+.pct{font:800 2.8rem/1 var(--f);color:var(--acc);margin-top:14px}
+.conf{font-weight:600;margin-top:8px;color:var(--muted)}
+.stage img{object-fit:contain;background:#000}
+.ref{margin-top:18px;display:flex;gap:14px;align-items:center;text-align:left;font-size:.85rem;color:var(--muted)}
+.refimg{flex:none;width:130px;background-color:#fff;background-image:url(/static/galeri.jpg);background-repeat:no-repeat;border-radius:10px}
+.note{text-align:center;color:var(--muted);margin:-22px 0 30px}
+.chart{position:relative;max-width:760px;margin:0 auto;background:#fff;border-radius:18px;overflow:hidden}
+.chart img{display:block;width:100%;height:auto}
+.hl{position:absolute;border:4px solid var(--acc);border-radius:14px;background:rgba(255,155,84,.2);pointer-events:none;transition:left .15s,top .15s,width .15s,height .15s}
+.steps{max-width:860px;margin:0 auto;display:grid;gap:22px}
+.step{display:flex;gap:24px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px}
+.step svg{flex:none;width:84px;height:84px}
+.step p{color:#d4d0f2;margin-top:6px}
+@media(max-width:560px){.step{flex-direction:column;text-align:center}}
+footer{background:#05040f;text-align:center;padding:30px 24px;color:var(--muted);font-size:.95rem}
+</style>
+</head>
+<body>
+<header>
+  <div id="prog"></div>
+  <div class="w"><nav aria-label="Navigasi utama">
+    <a class="logo" href="#">ISYARA AI</a>
+    <button id="burger" aria-expanded="false" aria-controls="menu">Menu</button>
+    <ul id="menu">
+      <li><a href="#fitur">Fitur</a></li>
+      <li><a href="#tentang">Tentang</a></li>
+      <li><a href="#deteksi">Deteksi</a></li>
+      <li><a href="#galeri">Galeri</a></li>
+      <li><a href="#panduan">Panduan</a></li>
+    </ul>
+  </nav></div>
+</header>
+
+<main>
+<section class="hero" aria-label="Beranda">
+  <div class="w">
+    <h1>Deteksi Bahasa Isyarat BISINDO</h1>
+    <p>Deteksi huruf isyarat secara real-time dengan AI dan kamera Anda. Aman, cepat, dan modern.</p>
+    <a class="cta" href="#deteksi">Mulai Deteksi</a>
+  </div>
+</section>
+
+<section id="fitur">
+  <div class="w">
+    <h2>Fitur Interaktif</h2>
+    <div class="cards">
+      <article class="card">
+        <svg viewBox="0 0 72 72" fill="none" stroke="#ff9b54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="18" width="40" height="32" rx="6"/><path d="M48 30l16-9v30l-16-9"/><circle cx="28" cy="34" r="7"/></svg>
+        <h3>Deteksi Real-Time</h3><p>Kenali isyarat secara langsung lewat kamera Anda.</p>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 72 72" fill="none" stroke="#ff9b54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="10" y="12" width="52" height="48" rx="7"/><path d="M10 26h52M22 38h28M22 48h18"/><circle cx="18" cy="19" r="1.5" fill="#ff9b54"/><circle cx="25" cy="19" r="1.5" fill="#ff9b54"/></svg>
+        <h3>Antarmuka Sederhana</h3><p>Desain ramah pengguna, mudah digunakan siapa saja.</p>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 72 72" fill="none" stroke="#ff9b54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="20" y="20" width="32" height="32" rx="6"/><path d="M30 31a6 6 0 0 1 12 0c0 3-3 4-3 7M36 45h.01M28 8v8M36 8v8M44 8v8M28 56v8M36 56v8M44 56v8M8 28h8M8 36h8M8 44h8M56 28h8M56 36h8M56 44h8"/></svg>
+        <h3>Ditenagai AI</h3><p>Model Machine Learning terlatih dengan akurasi tinggi.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="tentang" style="background:var(--bg2)">
+  <div class="w about">
+    <div>
+      <h2>Tentang ISYARA AI</h2>
+      <p>ISYARA AI adalah aplikasi edukatif untuk deteksi Bahasa Isyarat Indonesia secara real-time. Aplikasi ini bertujuan meningkatkan literasi inklusif dan memudahkan belajar bahasa isyarat tanpa perangkat tambahan.</p>
+    </div>
+    <svg viewBox="0 0 340 300" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="95" y="20" width="150" height="260" rx="22" fill="#2a2468" stroke="#8b7bff" stroke-width="3"/>
+      <rect x="108" y="46" width="124" height="208" rx="8" fill="#0c0a22"/>
+      <rect x="128" y="86" width="84" height="84" rx="10" stroke="#ff9b54" stroke-width="3" stroke-dasharray="8 7"/>
+      <path d="M152 150v-34a5 5 0 0 1 10 0v22M162 134v-26a5 5 0 0 1 10 0v26M172 134v-22a5 5 0 0 1 10 0v26M182 138v-14a5 5 0 0 1 10 0v26c0 14-10 24-24 24h-6c-9 0-14-5-20-14l-12-18a5 5 0 0 1 8-6l14 14" stroke="#ffb877" stroke-width="3"/>
+      <text x="170" y="222" text-anchor="middle" font-family="Inter,sans-serif" font-weight="800" font-size="30" fill="#ff9b54" stroke="none">A</text>
+      <path d="M20 90c30 0 40-30 75-30M320 210c-30 0-40 30-75 30M24 180h50M266 70h50" stroke="#5eead4" stroke-width="2.5" opacity=".7"/>
+      <circle cx="20" cy="90" r="4" fill="#5eead4" stroke="none"/><circle cx="320" cy="210" r="4" fill="#5eead4" stroke="none"/>
+    </svg>
+  </div>
+</section>
+
+<section id="deteksi">
+  <div class="w">
+    <h2>Deteksi Huruf Sekarang</h2>
+    <p class="banner" id="demoBanner" hidden>Model belum ditemukan di server. Hasil di bawah hanya contoh untuk menguji tampilan.</p>
+    <div class="live">
+      <div class="box">
+        <div class="stage">
+          <video id="video" autoplay playsinline muted hidden></video>
+          <img id="preview" alt="Gambar yang diunggah" hidden>
+          <div class="roi" id="roi"></div>
+          <div class="empty" id="empty"><b>Kamera belum aktif</b><span>Izinkan akses kamera, atau unggah foto untuk mencoba.</span></div>
+        </div>
+        <div class="row">
+          <button class="btn fill" id="btnCam">Nyalakan kamera</button>
+          <button class="btn" id="btnUp">Unggah gambar</button>
+          <input type="file" id="file" accept="image/*" hidden>
+        </div>
+        <p class="hint" id="status" role="status">Posisikan tangan di tengah kotak oranye dengan latar yang tidak ramai.</p>
+      </div>
+      <div class="box result">
+        <div class="ring">
+          <svg viewBox="0 0 120 120"><circle class="tr" cx="60" cy="60" r="54"/><circle class="bar" id="bar" cx="60" cy="60" r="54" stroke-dasharray="339.3" stroke-dashoffset="339.3"/></svg>
+          <div class="letter none" id="letter">?</div>
+        </div>
+        <p class="pct" id="pct">–</p>
+        <p class="conf" id="conf">Menunggu gambar</p>
+        <div class="ref" id="ref" hidden><div class="refimg" id="refimg" role="img" aria-label="Isyarat referensi huruf terdeteksi"></div><span>Isyarat referensi untuk huruf ini, bandingkan dengan isyarat Anda.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="galeri">
+  <div class="w">
+    <h2>Galeri Huruf A-Z</h2>
+    <p class="note">Bagan abjad BISINDO A–Z. Huruf yang terdeteksi akan disorot.</p>
+    <div class="chart"><img src="/static/galeri.jpg" alt="Bagan abjad BISINDO dari A sampai Z" width="1200" height="1200"><div class="hl" id="hl" hidden></div></div>
+  </div>
+</section>
+
+<section id="panduan" style="background:var(--bg2)">
+  <div class="w">
+    <h2>Cara Menggunakan Aplikasi</h2>
+    <div class="steps">
+      <div class="step">
+        <svg viewBox="0 0 84 84" fill="none" stroke="#ff9b54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 30h14l5-8h18l5 8h14v36H14z"/><circle cx="42" cy="45" r="11"/></svg>
+        <div><h3>1. Aktifkan Kamera</h3><p>Klik tombol <strong>“Nyalakan kamera”</strong> dan izinkan browser Anda menggunakan kamera. Pastikan tangan Anda terlihat jelas di dalam kotak oranye.</p></div>
+      </div>
+      <div class="step">
+        <svg viewBox="0 0 84 84" fill="none" stroke="#ff9b54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M34 62V30a5 5 0 0 1 10 0v18M44 44V26a5 5 0 0 1 10 0v22M54 46V32a5 5 0 0 1 10 0v26c0 12-9 20-20 20h-6c-9 0-13-5-18-12L12 52a5 5 0 0 1 8-6l14 12"/></svg>
+        <div><h3>2. Lakukan Isyarat</h3><p>Tunjukkan salah satu huruf A–Z dari bahasa isyarat BISINDO ke arah kamera. Gunakan pencahayaan yang cukup agar sistem dapat mengenali isyarat Anda.</p></div>
+      </div>
+      <div class="step">
+        <svg viewBox="0 0 84 84" fill="none" stroke="#ff9b54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="12" y="14" width="60" height="56" rx="8"/><path d="M12 30h60M26 44h14M26 56h30M52 40l5 5 9-10"/></svg>
+        <div><h3>3. Lihat Hasil</h3><p>Aplikasi langsung menampilkan huruf hasil prediksi beserta persentase keyakinannya, dan berubah mengikuti isyarat Anda. Huruf yang terdeteksi juga disorot pada galeri.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>© 2026 ISYARA AI.</footer>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+/* navigasi */
+const prog=$("prog"),menu=$("menu"),burger=$("burger");
+addEventListener("scroll",()=>{const h=document.documentElement;prog.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%"},{passive:true});
+burger.onclick=()=>{const o=menu.classList.toggle("open");burger.setAttribute("aria-expanded",o)};
+menu.onclick=e=>{if(e.target.tagName==="A"){menu.classList.remove("open");burger.setAttribute("aria-expanded","false")}};
+/* deteksi live: posisi tiap huruf pada bagan (persen) */
+const POS={"A":[4.3,7.27,15.74,13.97],"B":[22.58,7.27,15.03,13.76],"C":[39.45,7.83,10.3,13.9],"D":[52.22,7.27,13.27,14.04],"E":[67.75,8.12,10.44,14.11],"F":[81.23,8.12,12.99,15.03],"G":[5.86,23.08,13.48,15.38],"H":[23.22,23.57,13.27,14.75],"I":[39.45,23.08,10.16,15.24],"J":[52.58,22.23,12.0,17.43],"K":[65.21,23.85,12.99,14.4],"L":[83.35,23.08,10.16,16.65],"M":[4.87,40.93,10.3,15.46],"N":[22.58,40.16,11.15,15.53],"O":[40.08,40.01,8.68,16.37],"P":[51.09,40.93,14.11,15.38],"Q":[66.76,40.01,12.28,16.02],"R":[83.91,40.01,10.3,16.51],"S":[3.25,57.87,13.41,15.6],"T":[21.67,57.87,14.82,15.38],"U":[40.08,57.94,6.56,16.94],"V":[52.22,57.94,7.62,17.01],"W":[65.21,58.65,12.99,16.23],"X":[80.24,59.92,16.37,14.18],"Y":[4.52,73.39,10.8,18.77],"Z":[22.58,74.88,11.86,16.73]};
+const video=$("video"),prev=$("preview"),cv=document.createElement("canvas"),ctx=cv.getContext("2d");
+cv.width=cv.height=224;
+const C=2*Math.PI*54,MIN=.5;
+let stream=null,busy=false,last=0;
+const setStatus=(m,bad)=>{const s=$("status");s.textContent=m;s.classList.toggle("err",!!bad)};
+function setRing(p){$("bar").style.strokeDashoffset=C*(1-Math.min(1,p))}
+function stopCam(){if(!stream)return;stream.getTracks().forEach(t=>t.stop());stream=null;video.hidden=true;$("btnCam").textContent="Nyalakan kamera"}
+function reset(){$("ref").hidden=true;$("letter").textContent="?";$("letter").classList.add("none");$("pct").textContent="–";$("conf").textContent="Menunggu gambar";setRing(0);$("roi").classList.remove("hit");$("hl").hidden=true}
+function show(t,demo){
+  $("demoBanner").hidden=!demo;
+  const ok=t.score>=MIN,hl=$("hl"),p=POS[t.label];
+  $("letter").textContent=t.label;$("letter").classList.toggle("none",!ok);
+  $("pct").textContent=Math.round(t.score*100)+"%";
+  $("conf").textContent=ok?"Tingkat keyakinan":"Keyakinan rendah, coba atur posisi tangan";
+  setRing(t.score);$("roi").classList.toggle("hit",ok);
+  const ri=$("refimg");
+  if(ok&&p){const W=130,k=W*100/p[2];ri.style.cssText=`height:${W*p[3]/p[2]}px;background-size:${k}px ${k}px;background-position:${-p[0]*k/100}px ${-p[1]*k/100}px`;$("ref").hidden=false}else $("ref").hidden=true;
+  if(ok&&p){hl.style.cssText=`left:${p[0]}%;top:${p[1]}%;width:${p[2]}%;height:${p[3]}%`;hl.hidden=false}else hl.hidden=true;
+}
+async function send(src){
+  const w=src.videoWidth||src.naturalWidth,h=src.videoHeight||src.naturalHeight;
+  if(!w)return null;
+  const s=Math.min(w,h)*(src===video?.84:1);
+  ctx.drawImage(src,(w-s)/2,(h-s)/2,s,s,0,0,224,224);
+  const r=await fetch("/api/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:cv.toDataURL("image/jpeg",.9)})});
+  const j=await r.json();
+  if(!j.ok)throw new Error(j.error||"Prediksi gagal.");
+  return j;
+}
+async function loop(ts){
+  if(!stream)return;
+  if(!busy&&ts-last>200){
+    busy=true;last=ts;
+    try{const j=await send(video);if(j&&stream)show(j.top[0],j.demo)}
+    catch(e){setStatus(e.message,true)}
+    busy=false;
+  }
+  requestAnimationFrame(loop);
+}
+$("btnCam").onclick=async()=>{
+  if(stream){stopCam();$("empty").hidden=false;reset();return}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:960},height:{ideal:720}},audio:false});
+    video.srcObject=stream;video.hidden=false;prev.hidden=true;$("empty").hidden=true;$("roi").hidden=false;
+    $("btnCam").textContent="Matikan kamera";setStatus("Kamera aktif. Hasil diperbarui secara langsung.");
+    requestAnimationFrame(loop);
+  }catch(e){setStatus("Kamera tidak bisa diakses. Izinkan akses kamera di browser, atau pakai tombol Unggah gambar.",true)}
+};
+$("btnUp").onclick=()=>$("file").click();
+$("file").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  prev.onload=async()=>{
+    stopCam();prev.hidden=false;video.hidden=true;$("empty").hidden=true;$("roi").hidden=true;
+    try{const j=await send(prev);show(j.top[0],j.demo);setStatus("Hasil untuk gambar yang diunggah. Model menganalisis bagian tengah gambar.")}
+    catch(err){setStatus(err.message,true)}
+  };
+  prev.src=URL.createObjectURL(f);e.target.value="";
+};
+})();
+</script>
+</body>
+</html>

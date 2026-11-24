@@ -156,7 +156,7 @@ footer{background:#05040f;text-align:center;padding:30px 24px;color:var(--muted)
 <section id="deteksi">
   <div class="w">
     <h2>Deteksi Huruf Sekarang</h2>
-    <p class="banner" id="demoBanner" hidden>Model belum ditemukan di server. Hasil di bawah hanya contoh untuk menguji tampilan.</p>
+    <p class="banner" id="demoBanner" hidden></p>
     <div class="live">
       <div class="box">
         <div class="stage">
@@ -235,8 +235,31 @@ const setStatus=(m,bad)=>{const s=$("status");s.textContent=m;s.classList.toggle
 function setRing(p){$("bar").style.strokeDashoffset=C*(1-Math.min(1,p))}
 function stopCam(){if(!stream)return;stream.getTracks().forEach(t=>t.stop());stream=null;video.hidden=true;$("btnCam").textContent="Nyalakan kamera"}
 function reset(){$("ref").hidden=true;$("letter").textContent="?";$("letter").classList.add("none");$("pct").textContent="–";$("conf").textContent="Menunggu gambar";setRing(0);$("roi").classList.remove("hit");$("hl").hidden=true}
-function show(t,demo){
-  $("demoBanner").hidden=!demo;
+/* pesan masalah server atau model, tampil di atas area deteksi */
+function banner(m){const b=$("demoBanner");b.textContent=m||"";b.hidden=!m}
+/* request dengan batas waktu, supaya tidak menunggu selamanya kalau server macet */
+async function ambil(url,opt,ms){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),ms||15000);
+  try{
+    const r=await fetch(url,{...opt,signal:c.signal});
+    let j;try{j=await r.json()}catch(e){throw new Error("Respons server bukan JSON (HTTP "+r.status+"). Pastikan halaman dibuka dari http://127.0.0.1:5000 hasil python app.py, bukan Live Server atau file langsung.")}
+    return j;
+  }catch(e){
+    if(e.name==="AbortError")throw new Error("Server terlalu lama merespons. Cek terminal tempat app.py berjalan.");
+    if(e instanceof TypeError)throw new Error("Tidak bisa terhubung ke server Flask. Jalankan python app.py lalu buka http://127.0.0.1:5000.");
+    throw e;
+  }finally{clearTimeout(t)}
+}
+/* cek status server dan model saat halaman dibuka */
+async function cekServer(){
+  try{
+    const j=await ambil("/api/status",{},8000);
+    banner(j.model_loaded?"":"Model belum siap: "+(j.error||"file model tidak ditemukan")+". Deteksi tidak bisa dipakai sampai masalah ini diperbaiki.");
+    return j.model_loaded;
+  }catch(e){banner(e.message);return false}
+}
+cekServer();
+function show(t){
   const ok=t.score>=MIN,hl=$("hl"),p=POS[t.label];
   $("letter").textContent=t.label;$("letter").classList.toggle("none",!ok);
   $("pct").textContent=Math.round(t.score*100)+"%";
@@ -247,12 +270,12 @@ function show(t,demo){
   if(ok&&p){hl.style.cssText=`left:${p[0]}%;top:${p[1]}%;width:${p[2]}%;height:${p[3]}%`;hl.hidden=false}else hl.hidden=true;
 }
 async function send(src){
+  if(src===video&&video.readyState<2)return null;   // frame kamera belum siap
   const w=src.videoWidth||src.naturalWidth,h=src.videoHeight||src.naturalHeight;
   if(!w)return null;
   const s=Math.min(w,h)*(src===video?.84:1);
   ctx.drawImage(src,(w-s)/2,(h-s)/2,s,s,0,0,224,224);
-  const r=await fetch("/api/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:cv.toDataURL("image/jpeg",.9)})});
-  const j=await r.json();
+  const j=await ambil("/api/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:cv.toDataURL("image/jpeg",.9)})});
   if(!j.ok)throw new Error(j.error||"Prediksi gagal.");
   return j;
 }
@@ -260,8 +283,8 @@ async function loop(ts){
   if(!stream)return;
   if(!busy&&ts-last>200){
     busy=true;last=ts;
-    try{const j=await send(video);if(j&&stream)show(j.top[0],j.demo)}
-    catch(e){setStatus(e.message,true)}
+    try{const j=await send(video);if(j&&stream){show(j.top[0]);setStatus("Kamera aktif. Hasil diperbarui secara langsung.")}}
+    catch(e){setStatus(e.message,true);$("conf").textContent="Deteksi gagal, lihat pesan di bawah kamera"}
     busy=false;
   }
   requestAnimationFrame(loop);
@@ -280,8 +303,8 @@ $("file").onchange=e=>{
   const f=e.target.files[0];if(!f)return;
   prev.onload=async()=>{
     stopCam();prev.hidden=false;video.hidden=true;$("empty").hidden=true;$("roi").hidden=true;
-    try{const j=await send(prev);show(j.top[0],j.demo);setStatus("Hasil untuk gambar yang diunggah. Model menganalisis bagian tengah gambar.")}
-    catch(err){setStatus(err.message,true)}
+    try{const j=await send(prev);show(j.top[0]);setStatus("Hasil untuk gambar yang diunggah. Model menganalisis bagian tengah gambar.")}
+    catch(err){setStatus(err.message,true);$("conf").textContent="Deteksi gagal, lihat pesan di bawah gambar"}
   };
   prev.src=URL.createObjectURL(f);e.target.value="";
 };
